@@ -33,8 +33,8 @@ import { disk, time } from './utils.js';
     const fileReader = fs.createReadStream(absFilePath);
     const streamParser = new StreamParser({ format });
 
-    const { time: putTime } = await time(() => store.putStream(fileReader.pipe(streamParser), { scope }));
-    // const { time: putTime } = await time(() => store.putStream(fileReader.pipe(streamParser), { batchSize: 100 }));
+    // const { time: putTime } = await time(() => store.putStream(fileReader.pipe(streamParser), { scope }));
+    const { time: putTime } = await time(() => store.putStream(fileReader.pipe(streamParser), { batchSize: 100 }));
 
     const diskUsage = await checkDiskUsage();
 

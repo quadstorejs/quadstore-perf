@@ -43,4 +43,8 @@ clocks at **~35k quads per second** when importing quads one-by-one, with a
 density of **~6.5k quads per MB**. Due to the six indexes, this translates to
 ~210k batched update operations per second, ~0.42 times the reference target.
 
+Setting the `batchSize` parameter to `100` leads to quads being imported in
+groups of 100, which boosts performance up to **~50k quads per second**, roughly
+~0.6 times the reference target when accounting for the six indexes.
+
 [21mil-rdf]: https://github.com/dgraph-io/benchmarks/blob/master/data/21million.rdf.gz
