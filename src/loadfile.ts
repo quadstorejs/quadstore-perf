@@ -1,6 +1,6 @@
 
 import { AbstractLevel } from 'abstract-level';
-import fs from 'fs-extra';
+import fs from 'fs';
 import path from 'path';
 import { Quadstore } from 'quadstore';
 import { DataFactory, StreamParser } from 'n3';

@@ -14,10 +14,8 @@
   "dependencies": {
   },
   "devDependencies": {
-    "@types/fs-extra": "^9.0.13",
     "abstract-level": "^1.0.3",
     "classic-level": "^1.2.0",
-    "fs-extra": "^10.1.0",
     "n3": "^1.16.2",
     "quadstore": "^11.0.0-alpha.4",
     "quadstore-comunica": "^3.0.0-alpha.2",

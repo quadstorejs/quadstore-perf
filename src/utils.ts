@@ -4,7 +4,7 @@ import { EventEmitter } from 'events';
 import os from 'os';
 import { uid } from 'uid';
 import path from 'path';
-import fs from 'fs-extra';
+import fs from 'fs/promises';
 import { ClassicLevel } from 'classic-level';
 import childProcess from 'child_process';
 
@@ -22,7 +22,7 @@ export const disk = async (fn: (backend: AbstractLevel<any, any, any>, checkDisk
   const checkDiskUsage = () => du(dir);
   const backend = new ClassicLevel(dir);
   await fn(backend, checkDiskUsage);
-  await fs.remove(dir);
+  await fs.rm(dir, { recursive: true });
 };
 
 export const time = async <T>(fn: () => Promise<T>): Promise<{time: number, value: T }> => {
