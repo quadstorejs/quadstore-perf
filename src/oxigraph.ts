@@ -78,4 +78,15 @@ main(async () => {
     strictEqual(count, QTY, 'bad count');
   }, 'quadstore - sequential read');
 
+  await time(async () => {
+    let count = 0;
+    const { iterator } = await quadstore.getStream({});
+    await new Promise((resolve) => {
+      iterator.on('data', (binding: any) => {
+        count += 1;
+      }).once('end', resolve);
+    });
+    strictEqual(count, QTY, 'bad count');
+  }, 'quadstore - sequential read w/o SPARQL');
+
 });
