@@ -12,7 +12,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "memory-level": "^1.0.0"
+    "memory-level": "^1.0.0",
+    "oxigraph": "^0.3.5"
   },
   "devDependencies": {
     "@types/n3": "^1.10.4",
