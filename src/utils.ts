@@ -47,3 +47,25 @@ export const waitForEvent = (emitter: EventEmitter, event: string, rejectOnError
     }
   });
 };
+
+interface Readable<T> {
+  read(): T | null;
+  on(event: 'end', cb: () => any): void;
+  on(event: 'data', cb: (item: T) => any): void;
+  on(event: 'error', cb: (err: Error) => any): void;
+}
+
+export const streamToArray = <T>(source: Readable<T>): Promise<T[]> => {
+  return new Promise((resolve, reject) => {
+    const buf: T[] = [];
+    source.on('data', (item: T) => {
+      buf.push(item);
+    });
+    source.on('error', (err: Error) => {
+      reject(err);
+    });
+    source.on('end', () => {
+      resolve(buf);
+    });
+  });
+};
