@@ -5,7 +5,7 @@ import path from 'path';
 import { Quadstore } from 'quadstore';
 import { ArrayIterator } from 'asynciterator';
 import { DataFactory, StreamParser } from 'n3';
-import {disk, streamToArray, time} from './utils.js';
+import {runTest, streamToArray, time} from './utils.js';
 
 (async () => {
 
@@ -19,7 +19,7 @@ import {disk, streamToArray, time} from './utils.js';
     return;
   }
 
-  await disk(async (backend: AbstractLevel<any, any, any>, checkDiskUsage) => {
+  await runTest(async (backend: AbstractLevel<any, any, any>, checkDiskUsage) => {
 
     const store = new Quadstore({
       backend,

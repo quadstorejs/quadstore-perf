@@ -4,11 +4,11 @@
  */
 
 import { Quadstore } from 'quadstore';
-import { disk, time, waitForEvent } from './utils.js';
+import { runTest, time, waitForEvent } from './utils.js';
 import { DataFactory } from 'rdf-data-factory';
 
 const dataFactory = new DataFactory();
-const qty = 200000;
+const qty = 2 * 1e5;
 
 const doWrites = async (store: Quadstore) => {
   for (let i = 0; i < qty; i += 1) {
@@ -34,7 +34,7 @@ const doReads = async (store: Quadstore) => {
   return count;
 };
 
-disk(async (backend, checkDiskUsage) => {
+runTest(async (backend, checkDiskUsage) => {
   const store = new Quadstore({
     backend,
     dataFactory,

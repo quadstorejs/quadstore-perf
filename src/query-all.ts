@@ -4,7 +4,7 @@
  */
 
 import { Quadstore } from 'quadstore';
-import { disk, time, waitForEvent } from './utils.js';
+import { runTest, time, waitForEvent } from './utils.js';
 import { DataFactory } from 'rdf-data-factory';
 import { Engine } from 'quadstore-comunica';
 
@@ -36,7 +36,7 @@ const doReads = async (store: Quadstore) => {
   return count;
 };
 
-disk(async (backend, checkDiskUsage) => {
+runTest(async (backend, checkDiskUsage) => {
   const store = new Quadstore({
     backend,
     dataFactory,

@@ -1,15 +1,12 @@
 
 import { AbstractLevel } from 'abstract-level';
 import { EventEmitter } from 'events';
-import os from 'os';
 import { uid } from 'uid';
-import path from 'path';
-import fs from 'fs/promises';
-import { ClassicLevel } from 'classic-level';
-import childProcess from 'child_process';
+import { MemoryLevel } from 'memory-level';
 
-const du = (absPath: string): Promise<number> => {
-  return new Promise((resolve, reject) => {
+const du = async (absPath: string): Promise<number> => {
+  const childProcess = await import('child_process');
+  return await new Promise((resolve, reject) => {
     childProcess.exec(`du -s ${absPath}`, (err: Error|null, stdout: string) => {
       if (err) reject(err);
       else resolve(parseInt(`${stdout.split(/\s+/)[0]}`));
@@ -17,12 +14,33 @@ const du = (absPath: string): Promise<number> => {
   });
 }
 
-export const disk = async (fn: (backend: AbstractLevel<any, any, any>, checkDiskUsage: () => Promise<number>) => Promise<any>): Promise<void> => {
+const runTestOnDisk = async (fn: (backend: AbstractLevel<any, any, any>, checkDiskUsage: () => Promise<number>) => Promise<any>): Promise<void> => {
+  const os = await import('os');
+  const path = await import('path');
+  const fs = await import('fs/promises');
+  const { ClassicLevel } = await import('classic-level');
   const dir = path.join(os.tmpdir(), `node-quadstore-${uid()}`);
   const checkDiskUsage = () => du(dir);
   const backend = new ClassicLevel(dir);
   await fn(backend, checkDiskUsage);
   await fs.rm(dir, { recursive: true });
+};
+
+const runTestInMemory = async (fn: (backend: AbstractLevel<any, any, any>, checkUsage: () => Promise<number>) => Promise<any>): Promise<void> => {
+  const checkUsage = () => Promise.resolve(0);
+  const backend = new MemoryLevel();
+  await fn(backend, checkUsage);
+};
+
+export const runTest = (fn: (backend: AbstractLevel<any, any, any>, checkDiskUsage: () => Promise<number>) => Promise<any>): void => {
+  try {
+    (process.env.MEMORY ? runTestInMemory : runTestOnDisk)(fn)
+      .catch((err) => {
+        console.error(err);
+      });
+  } catch (err) {
+    console.error(err);
+  }
 };
 
 export const time = async <T>(fn: () => Promise<T>): Promise<{time: number, value: T }> => {
