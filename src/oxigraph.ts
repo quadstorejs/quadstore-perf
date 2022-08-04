@@ -57,6 +57,11 @@ main(async () => {
   }, 'oxigraph - sequential read');
 
   await time(async () => {
+    const quads = oxistore.match(null, null, null, null);
+    strictEqual(quads.length, QTY, 'bad count');
+  }, 'oxigraph - sequential read w/o SPARQL (no streaming)');
+
+  await time(async () => {
     for (let i = 0; i < QTY; i += 1) {
       await quadstore.put(dataFactory.quad(
         dataFactory.namedNode('http://ex/s'),
