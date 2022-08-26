@@ -11,10 +11,9 @@ const QTY = 1e5;
 const dataFactory = new DataFactory();
 
 const time = async (fn: () => any, name: string) => {
-  const before = Date.now();
+  console.time(name);
   await Promise.resolve(fn());
-  const after = Date.now();
-  console.log(`${name}: ${after - before} ms`);
+  console.timeEnd(name);
 };
 
 const main = (fn: () => any) => {
@@ -33,7 +32,7 @@ main(async () => {
     backend: new ClassicLevel('./.quadstore.leveldb'),
   });
 
-  // await quadstore.open();
+  await quadstore.open();
   await quadstore.clear();
 
   const engine = new Engine(quadstore);
@@ -49,19 +48,6 @@ main(async () => {
   }, 'oxigraph - write');
 
   await time(async () => {
-    let count = 0;
-    for (const binding of oxistore.query('SELECT * WHERE { ?s ?p ?o }')) {
-      count += 1;
-    }
-    strictEqual(count, QTY, 'bad count');
-  }, 'oxigraph - sequential read');
-
-  await time(async () => {
-    const quads = oxistore.match(null, null, null, null);
-    strictEqual(quads.length, QTY, 'bad count');
-  }, 'oxigraph - sequential read w/o SPARQL (no streaming)');
-
-  await time(async () => {
     for (let i = 0; i < QTY; i += 1) {
       await quadstore.put(dataFactory.quad(
         dataFactory.namedNode('http://ex/s'),
@@ -73,6 +59,14 @@ main(async () => {
 
   await time(async () => {
     let count = 0;
+    for (const binding of oxistore.query('SELECT * WHERE { ?s ?p ?o }')) {
+      count += 1;
+    }
+    strictEqual(count, QTY, 'bad count');
+  }, 'oxigraph - SPARQL SELECT * WHERE { ?s ?p ?o }');
+
+  await time(async () => {
+    let count = 0;
     await engine.queryBindings('SELECT * WHERE { ?s ?p ?o }').then((iterator: any) => {
       return new Promise((resolve, reject) => {
         iterator.on('data', (binding: any) => {
@@ -81,7 +75,12 @@ main(async () => {
       });
     });
     strictEqual(count, QTY, 'bad count');
-  }, 'quadstore - sequential read');
+  }, 'quadstore - SPARQL SELECT * WHERE { ?s ?p ?o }');
+
+  await time(async () => {
+    const quads = oxistore.match(null, null, null, null);
+    strictEqual(quads.length, QTY, 'bad count');
+  }, 'oxigraph - sequential read from index (no streaming)');
 
   await time(async () => {
     let count = 0;
@@ -92,6 +91,8 @@ main(async () => {
       }).once('end', resolve);
     });
     strictEqual(count, QTY, 'bad count');
-  }, 'quadstore - sequential read w/o SPARQL');
+  }, 'quadstore - sequential read from index');
+
+
 
 });
