@@ -13,15 +13,15 @@
   "license": "ISC",
   "dependencies": {
     "memory-level": "^1.0.0",
-    "oxigraph": "^0.3.6",
+    "oxigraph": "^0.3.8",
     "@types/n3": "^1.10.4",
     "abstract-level": "^1.0.3",
     "classic-level": "^1.2.0",
-    "n3": "^1.16.2",
-    "quadstore": "^11.0.6",
-    "quadstore-comunica": "^3.0.7",
+    "n3": "^1.16.3",
+    "quadstore": "^11.0.7",
+    "quadstore-comunica": "^3.0.8",
     "rdf-data-factory": "^1.1.1",
     "typescript": "^4.8.4",
-    "uid": "^2.0.0"
+    "uid": "^2.0.1"
   }
 }

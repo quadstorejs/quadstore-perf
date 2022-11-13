@@ -16,10 +16,10 @@ running Node v18.7.0.
 ### Reading quads
 
 Sequential reads iterating through quads in any given index run at about
-**~850k quads per second**.
+**~900k quads per second**.
 
 ```
-node dist/perf/read.js
+node dist/read.js
 ```
 
 ### Importing quads
@@ -35,7 +35,7 @@ We test import performance by importing the [`21million.rdf`][21mil-rdf] file
 or a subset of it.
 
 ```
-node dist/perf/loadfile.js /path/to/21million.rdf
+node dist/loadfile.js /path/to/21million.rdf
 ```
 
 With the default six indexes and the `classic-level` backend, import performance
