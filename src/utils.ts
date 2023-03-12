@@ -7,7 +7,7 @@ import { MemoryLevel } from 'memory-level';
 const du = async (absPath: string): Promise<number> => {
   const childProcess = await import('child_process');
   return await new Promise((resolve, reject) => {
-    childProcess.exec(`du -s ${absPath}`, (err: Error|null, stdout: string) => {
+    childProcess.exec(`du -m -s ${absPath}`, (err: Error|null, stdout: string) => {
       if (err) reject(err);
       else resolve(parseInt(`${stdout.split(/\s+/)[0]}`));
     });
@@ -35,6 +35,7 @@ const runTestInMemory = async (fn: (backend: AbstractLevel<any, any, any>, check
 export const runTest = (fn: (backend: AbstractLevel<any, any, any>, checkDiskUsage: () => Promise<number>) => Promise<any>): void => {
   try {
     (process.env.MEMORY ? runTestInMemory : runTestOnDisk)(fn)
+      .then(() => (process.env.MEMORY ? runTestInMemory : runTestOnDisk)(fn))
       .catch((err) => {
         console.error(err);
       });
