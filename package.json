@@ -12,16 +12,16 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@types/n3": "^1.10.4",
+    "@types/n3": "^1.16.0",
     "abstract-level": "^1.0.3",
-    "classic-level": "^1.2.0",
+    "classic-level": "^1.3.0",
     "memory-level": "^1.0.0",
-    "n3": "^1.16.3",
-    "oxigraph": "^0.3.13",
-    "quadstore": "^12.0.0",
-    "quadstore-comunica": "^3.1.0",
-    "rdf-data-factory": "^1.1.1",
-    "typescript": "^4.9.5",
-    "uid": "^2.0.1"
+    "n3": "^1.17.0",
+    "oxigraph": "^0.3.18",
+    "quadstore": "^12.0.2",
+    "quadstore-comunica": "^3.1.1",
+    "rdf-data-factory": "^1.1.2",
+    "typescript": "^5.1.6",
+    "uid": "^2.0.2"
   }
 }
