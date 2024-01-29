@@ -18,10 +18,13 @@ const runTestOnDisk = async (fn: (backend: AbstractLevel<any, any, any>, checkDi
   const os = await import('os');
   const path = await import('path');
   const fs = await import('fs/promises');
-  const { ClassicLevel } = await import('classic-level');
+  // const { ClassicLevel } = await import('classic-level');
+  // @ts-ignore
+  const { RocksLevel } = await import('@nxtedition/rocksdb');
   const dir = path.join(os.tmpdir(), `node-quadstore-${uid()}`);
   const checkDiskUsage = () => du(dir);
-  const backend = new ClassicLevel(dir);
+  // const backend = new ClassicLevel(dir);
+  const backend = new RocksLevel(dir);
   await fn(backend, checkDiskUsage);
   await fs.rm(dir, { recursive: true });
 };
