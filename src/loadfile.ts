@@ -6,8 +6,9 @@ import { Quadstore } from 'quadstore';
 import { ArrayIterator } from 'asynciterator';
 import { DataFactory, StreamParser } from 'n3';
 import {runTest, streamToArray, time} from './utils.js';
+import { main } from './utils.js';
 
-(async () => {
+main(async () => {
 
   const args = process.argv.slice(2);
 
@@ -53,4 +54,4 @@ import {runTest, streamToArray, time} from './utils.js';
 
   });
 
-})();
+});

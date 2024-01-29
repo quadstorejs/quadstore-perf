@@ -5,6 +5,7 @@ import { Engine } from  'quadstore-comunica';
 import { Quadstore } from  'quadstore';
 import { DataFactory } from  'rdf-data-factory';
 import { ClassicLevel } from  'classic-level';
+import { main } from './utils';
 
 const QTY = 1e5;
 
@@ -14,13 +15,6 @@ const time = async (fn: () => any, name: string) => {
   console.time(name);
   await Promise.resolve(fn());
   console.timeEnd(name);
-};
-
-const main = (fn: () => any) => {
-  Promise.resolve(fn()).catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
 };
 
 main(async () => {

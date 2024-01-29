@@ -2,7 +2,12 @@
 import { AbstractLevel } from 'abstract-level';
 import { EventEmitter } from 'events';
 import { uid } from 'uid';
-import { MemoryLevel } from 'memory-level';
+
+export type DiskBackendType = 'classic' | 'rocksdb-nxtedition';
+
+export type MemoryBackendType = 'memory';
+
+export type BackendType = DiskBackendType | MemoryBackendType;
 
 const du = async (absPath: string): Promise<number> => {
   const childProcess = await import('child_process');
@@ -14,36 +19,56 @@ const du = async (absPath: string): Promise<number> => {
   });
 }
 
-const runTestOnDisk = async (fn: (backend: AbstractLevel<any, any, any>, checkDiskUsage: () => Promise<number>) => Promise<any>): Promise<void> => {
+const runTestUsingDiskStorage = async (backendType: DiskBackendType, fn: (backend: AbstractLevel<any, any, any>, checkDiskUsage: () => Promise<number>) => Promise<any>): Promise<void> => {
   const os = await import('os');
   const path = await import('path');
   const fs = await import('fs/promises');
-  // const { ClassicLevel } = await import('classic-level');
-  // @ts-ignore
-  const { RocksLevel } = await import('@nxtedition/rocksdb');
+  let Level: new (location: string, opts?: any) => AbstractLevel<any, any, any>;
+  switch (backendType) {
+    case 'classic':
+      Level = (await import('classic-level')).ClassicLevel;
+      break;
+    case 'rocksdb-nxtedition':
+      // @ts-ignore
+      Level = (await import('@nxtedition/rocksdb')).RocksLevel;
+      break;
+    default:
+      throw new Error('unsupported');
+  }
   const dir = path.join(os.tmpdir(), `node-quadstore-${uid()}`);
   const checkDiskUsage = () => du(dir);
   // const backend = new ClassicLevel(dir);
-  const backend = new RocksLevel(dir);
+  const backend = new Level(dir);
   await fn(backend, checkDiskUsage);
   await fs.rm(dir, { recursive: true });
 };
 
-const runTestInMemory = async (fn: (backend: AbstractLevel<any, any, any>, checkUsage: () => Promise<number>) => Promise<any>): Promise<void> => {
+const runTestInMemory = async (backendType: MemoryBackendType, fn: (backend: AbstractLevel<any, any, any>, checkUsage: () => Promise<number>) => Promise<any>): Promise<void> => {
   const checkUsage = () => Promise.resolve(0);
-  const backend = new MemoryLevel();
+  let Level: new (opts?: any) => AbstractLevel<any, any, any>;
+  switch (backendType) {
+    case 'memory':
+      Level = (await import('memory-level')).MemoryLevel;
+      break;
+    default:
+      throw new Error('unsupported');
+  }
+  const backend = new Level();
   await fn(backend, checkUsage);
 };
 
-export const runTest = (fn: (backend: AbstractLevel<any, any, any>, checkDiskUsage: () => Promise<number>) => Promise<any>): void => {
-  try {
-    (process.env.MEMORY ? runTestInMemory : runTestOnDisk)(fn)
-      .then(() => (process.env.MEMORY ? runTestInMemory : runTestOnDisk)(fn))
-      .catch((err) => {
-        console.error(err);
-      });
-  } catch (err) {
-    console.error(err);
+export const runTest = async (fn: (backend: AbstractLevel<any, any, any>, checkDiskUsage: () => Promise<number>) => Promise<any>): Promise<void> => {
+  const backendType = process.env.BACKEND ?? 'classic';
+  switch (backendType) {
+    case 'classic':
+    case 'rocksdb-nxtedition':
+      await runTestUsingDiskStorage(backendType, fn);
+      break;
+    case 'memory':
+      await runTestInMemory(backendType, fn);
+      break;
+    default:
+      throw new Error('unsupported');
   }
 };
 
@@ -89,5 +114,12 @@ export const streamToArray = <T>(source: Readable<T>): Promise<T[]> => {
     source.on('end', () => {
       resolve(buf);
     });
+  });
+};
+
+export const main = (fn: () => any) => {
+  Promise.resolve(fn()).catch((err) => {
+    console.error(err);
+    process.exit(1);
   });
 };
