@@ -18,7 +18,7 @@
     "classic-level": "^1.4.1",
     "memory-level": "^1.0.0",
     "n3": "^1.17.2",
-    "oxigraph": "^0.3.22",
+    "oxigraph": "^0.4.0-alpha.3",
     "quadstore": "^13.0.1",
     "quadstore-comunica": "^4.0.1",
     "rdf-data-factory": "^1.1.2",

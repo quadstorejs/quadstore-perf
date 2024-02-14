@@ -5,7 +5,7 @@ import { Engine } from  'quadstore-comunica';
 import { Quadstore } from  'quadstore';
 import { DataFactory } from  'rdf-data-factory';
 import { ClassicLevel } from  'classic-level';
-import { main } from './utils';
+import { main } from './utils.js';
 
 const QTY = 1e5;
 
