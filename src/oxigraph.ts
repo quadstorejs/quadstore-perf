@@ -53,7 +53,7 @@ main(async () => {
 
   await time(async () => {
     let count = 0;
-    for (const binding of oxistore.query('SELECT * WHERE { ?s ?p ?o }')) {
+    for (const binding of oxistore.query('SELECT * WHERE { ?s ?p ?o }', {})) {
       count += 1;
     }
     strictEqual(count, QTY, 'bad count');
