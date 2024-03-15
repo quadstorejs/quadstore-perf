@@ -4,7 +4,6 @@ import oxigraph from  'oxigraph';
 import { Engine } from  'quadstore-comunica';
 import { Quadstore } from  'quadstore';
 import { DataFactory } from  'rdf-data-factory';
-import { ClassicLevel } from  'classic-level';
 import { main, runTest, waitForEvent } from './utils.js';
 
 const QTY = 1e5;
@@ -19,7 +18,7 @@ main(async () => {
 
     const quadstore = new Quadstore({
       dataFactory,
-      backend: new ClassicLevel('./.quadstore.leveldb'),
+      backend,
     });
 
     await quadstore.open();
