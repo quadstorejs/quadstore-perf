@@ -5,33 +5,29 @@ import { Engine } from  'quadstore-comunica';
 import { Quadstore } from  'quadstore';
 import { DataFactory } from  'rdf-data-factory';
 import { ClassicLevel } from  'classic-level';
-import { main } from './utils.js';
+import { main, runTest, waitForEvent } from './utils.js';
 
 const QTY = 1e5;
 
 const dataFactory = new DataFactory();
 
-const time = async (fn: () => any, name: string) => {
-  console.time(name);
-  await Promise.resolve(fn());
-  console.timeEnd(name);
-};
-
 main(async () => {
 
-  const oxistore = new oxigraph.Store();
+  const results = await runTest(async (backend, du, time, timeEnd, info) => {
 
-  const quadstore = new Quadstore({
-    dataFactory,
-    backend: new ClassicLevel('./.quadstore.leveldb'),
-  });
+    const oxistore = new oxigraph.Store();
 
-  await quadstore.open();
-  await quadstore.clear();
+    const quadstore = new Quadstore({
+      dataFactory,
+      backend: new ClassicLevel('./.quadstore.leveldb'),
+    });
 
-  const engine = new Engine(quadstore);
+    await quadstore.open();
+    await quadstore.clear();
 
-  await time(async () => {
+    const engine = new Engine(quadstore);
+
+    time('oxigraph - write');
     for (let i = 0; i < QTY; i += 1) {
       oxistore.add(oxigraph.triple(
         oxigraph.namedNode('http://ex/s'),
@@ -39,9 +35,9 @@ main(async () => {
         oxigraph.literal(`${i}`, 'en'),
       ));
     }
-  }, 'oxigraph - write');
+    timeEnd('oxigraph - write');
 
-  await time(async () => {
+    time('quadstore - write');
     for (let i = 0; i < QTY; i += 1) {
       await quadstore.put(dataFactory.quad(
         dataFactory.namedNode('http://ex/s'),
@@ -49,44 +45,44 @@ main(async () => {
         dataFactory.literal(`${i}`, 'en'),
       ));
     }
-  }, 'quadstore - write');
+    timeEnd('quadstore - write');
+    
 
-  await time(async () => {
-    let count = 0;
+    time('oxigraph - SQL read');    
+    let oxigraph_sql_count = 0;
     for (const binding of oxistore.query('SELECT * WHERE { ?s ?p ?o }', {})) {
-      count += 1;
+      oxigraph_sql_count += 1;
     }
-    strictEqual(count, QTY, 'bad count');
-  }, 'oxigraph - SPARQL SELECT * WHERE { ?s ?p ?o }');
+    strictEqual(oxigraph_sql_count, QTY, 'bad count');
+    timeEnd('oxigraph - SQL read');    
 
-  await time(async () => {
-    let count = 0;
-    await engine.queryBindings('SELECT * WHERE { ?s ?p ?o }').then((iterator: any) => {
-      return new Promise((resolve, reject) => {
-        iterator.on('data', (binding: any) => {
-          count += 1;
-        }).once('end', resolve);
-      });
+    time('quadstore - SQL read');    
+    let quadstore_sql_count = 0;
+    const quadstore_sql_iterator = await engine.queryBindings('SELECT * WHERE { ?s ?p ?o }');
+    quadstore_sql_iterator.on('data', (binding: any) => {
+      quadstore_sql_count += 1;
     });
-    strictEqual(count, QTY, 'bad count');
-  }, 'quadstore - SPARQL SELECT * WHERE { ?s ?p ?o }');
+    await waitForEvent(quadstore_sql_iterator, 'end');
+    strictEqual(quadstore_sql_count, QTY, 'bad count');
+    timeEnd('quadstore - SQL read');  
 
-  await time(async () => {
+    time('oxigraph - API read');  
     const quads = oxistore.match(null, null, null, null);
     strictEqual(quads.length, QTY, 'bad count');
-  }, 'oxigraph - sequential read from index (no streaming)');
+    timeEnd('oxigraph - API read');  
 
-  await time(async () => {
-    let count = 0;
-    const { iterator } = await quadstore.getStream({});
-    await new Promise((resolve) => {
-      iterator.on('data', (binding: any) => {
-        count += 1;
-      }).once('end', resolve);
+    time('quadstore - API read');  
+    let quadstore_api_count = 0;
+    const { iterator: quadstore_api_iterator } = await quadstore.getStream({});
+    quadstore_api_iterator.on('data', (binding: any) => {
+      quadstore_api_count += 1;
     });
-    strictEqual(count, QTY, 'bad count');
-  }, 'quadstore - sequential read from index');
+    await waitForEvent(quadstore_api_iterator, 'end');
+    strictEqual(quadstore_api_count, QTY, 'bad count');
+    timeEnd('quadstore - API read');  
+    
+  });
 
-
+  console.log(JSON.stringify(results, null, 2));
 
 });

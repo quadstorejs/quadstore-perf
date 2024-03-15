@@ -5,8 +5,8 @@ import path from 'path';
 import { Quadstore } from 'quadstore';
 import { ArrayIterator } from 'asynciterator';
 import { DataFactory, StreamParser } from 'n3';
-import {runTest, streamToArray, time} from './utils.js';
-import { main } from './utils.js';
+import { runTest, streamToArray } from './utils.js';
+import { main, round } from './utils.js';
 
 main(async () => {
 
@@ -20,7 +20,7 @@ main(async () => {
     return;
   }
 
-  await runTest(async (backend: AbstractLevel<any, any, any>, checkDiskUsage) => {
+  const results = await runTest(async (backend, du, time, timeEnd, info) => {
 
     const store = new Quadstore({
       backend,
@@ -37,21 +37,22 @@ main(async () => {
 
     const quads = await streamToArray(fileReader.pipe(streamParser));
 
-    console.log(`Loaded ${quads.length} quads in memory`);
-
     const source = new ArrayIterator(quads);
 
     // const { time: putTime } = await time(() => store.putStream(source));
     // const { time: putTime } = await time(() => store.putStream(source, { scope }));
-    const { time: putTime } = await time(() => store.putStream(source, { batchSize: 100 }));
+    time('write');
+    await store.putStream(source, { batchSize: 100 });
+    const duration = timeEnd('write');
 
-    const diskUsage = await checkDiskUsage();
+    info('quads_per_second', round((quads.length / duration) * 1000, 2));
 
-    console.log(`TIME: ${putTime} s`);
-    console.log(`DISK: ${diskUsage}`);
+    await du('post_write');
 
     await store.close();
 
   });
+
+  console.log(JSON.stringify(results, null, 2));
 
 });

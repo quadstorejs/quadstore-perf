@@ -2,6 +2,7 @@
 import { AbstractLevel } from 'abstract-level';
 import { EventEmitter } from 'events';
 import { uid } from 'uid';
+import assert from 'node:assert';
 
 export type DiskBackendType = 'classic' | 'rocksdb-nxtedition';
 
@@ -9,9 +10,29 @@ export type MemoryBackendType = 'memory';
 
 export type BackendType = DiskBackendType | MemoryBackendType;
 
-const du = async (absPath: string): Promise<number> => {
+export type DiskUsageFn = (label: string) => Promise<void>;
+
+export type TimeFn = (name: string) => void;
+
+export type TimeEndFn = (name: string, info?: Record<string, any>) => number;
+
+export type InfoFn = (label: string, value: any) => void;
+
+export type TestFn = (backend: AbstractLevel<any, any, any>, du: DiskUsageFn, time: TimeFn, timeEnd: TimeEndFn, info: InfoFn) => Promise<void>;
+
+export interface TestResults {
+  time: { 
+    total: number;
+    partials: Record<string, { time: number }>;
+  };
+  disk: Record<string, number>;
+  info: Record<string, any>;
+}
+
+const du = async (absPath: string, label: string, disk_results: TestResults['disk']): Promise<void> => {
+  assert(!(label in disk_results), 'cannot reuse label for disk usage');
   const childProcess = await import('child_process');
-  return await new Promise((resolve, reject) => {
+  disk_results[label] = await new Promise((resolve, reject) => {
     childProcess.exec(`du -m -s ${absPath}`, (err: Error|null, stdout: string) => {
       if (err) reject(err);
       else resolve(parseInt(`${stdout.split(/\s+/)[0]}`));
@@ -19,7 +40,7 @@ const du = async (absPath: string): Promise<number> => {
   });
 }
 
-const runTestUsingDiskStorage = async (backendType: DiskBackendType, fn: (backend: AbstractLevel<any, any, any>, checkDiskUsage: () => Promise<number>) => Promise<any>): Promise<void> => {
+const runTestUsingDiskStorage = async <T>(backendType: DiskBackendType, fn: TestFn, time: TimeFn, timeEnd: TimeEndFn, info: InfoFn, disk_results: TestResults['disk']): Promise<void> => {
   const os = await import('os');
   const path = await import('path');
   const fs = await import('fs/promises');
@@ -36,15 +57,14 @@ const runTestUsingDiskStorage = async (backendType: DiskBackendType, fn: (backen
       throw new Error('unsupported');
   }
   const dir = path.join(os.tmpdir(), `node-quadstore-${uid()}`);
-  const checkDiskUsage = () => du(dir);
-  // const backend = new ClassicLevel(dir);
+  const checkDiskUsage: DiskUsageFn = (label: string) => du(dir, label, disk_results);
   const backend = new Level(dir);
-  await fn(backend, checkDiskUsage);
+  await fn(backend, (checkDiskUsage), time, timeEnd, info);
   await fs.rm(dir, { recursive: true });
 };
 
-const runTestInMemory = async (backendType: MemoryBackendType, fn: (backend: AbstractLevel<any, any, any>, checkUsage: () => Promise<number>) => Promise<any>): Promise<void> => {
-  const checkUsage = () => Promise.resolve(0);
+const runTestInMemory = async (backendType: MemoryBackendType, fn: TestFn, time: TimeFn, timeEnd: TimeEndFn, info: InfoFn): Promise<void> => {
+  const checkDiskUsage: DiskUsageFn = (label: string) => Promise.resolve();
   let Level: new (opts?: any) => AbstractLevel<any, any, any>;
   switch (backendType) {
     case 'memory':
@@ -54,28 +74,49 @@ const runTestInMemory = async (backendType: MemoryBackendType, fn: (backend: Abs
       throw new Error('unsupported');
   }
   const backend = new Level();
-  await fn(backend, checkUsage);
+  return await fn(backend, checkDiskUsage, time, timeEnd, info);
 };
 
-export const runTest = async (fn: (backend: AbstractLevel<any, any, any>, checkDiskUsage: () => Promise<number>) => Promise<any>): Promise<void> => {
+
+
+export const runTest = async (fn: TestFn): Promise<TestResults> => {
+  let test_started_at = Date.now();
+  const partials: Record<string, TestResults['time']['partials'][string] & { started_at: number }> = {};
+  const disk: TestResults['disk'] = {};
+  const info: TestResults['info'] = {};
+  const time: TimeFn = (name) => {
+    assert(!(name in partials), `part ${name} already started`);
+    partials[name] = { started_at: Date.now(), time: 0 };
+  };
+  const timeEnd: TimeEndFn = (name) => {
+    assert(name in partials, `part ${name} not started`);
+    const duration = Date.now() - partials[name].started_at
+    partials[name].time = duration;
+    return duration;
+  };
+  const infoFn: InfoFn = (label, value) => {
+    assert(!(label in info), 'label already in use');
+    info[label] = value;
+  };
   const backendType = process.env.BACKEND ?? 'classic';
   switch (backendType) {
     case 'classic':
     case 'rocksdb-nxtedition':
-      await runTestUsingDiskStorage(backendType, fn);
+      await runTestUsingDiskStorage(backendType, fn, time, timeEnd, infoFn, disk);
       break;
     case 'memory':
-      await runTestInMemory(backendType, fn);
+      await runTestInMemory(backendType, fn, time, timeEnd, infoFn);
       break;
     default:
       throw new Error('unsupported');
   }
-};
-
-export const time = async <T>(fn: () => Promise<T>): Promise<{time: number, value: T }> => {
-  const start = Date.now();
-  const value = await fn();
-  return { time: Date.now() - start, value };
+  return { 
+    time: { 
+      total: Date.now() - test_started_at, 
+      partials: Object.fromEntries(Object.entries(partials).map(([name, { time }]) => [name, { time }])) }, 
+    disk, 
+    info,
+  };
 };
 
 export const waitForEvent = (emitter: EventEmitter, event: string, rejectOnError?: boolean): Promise<any> => {
@@ -122,4 +163,9 @@ export const main = (fn: () => any) => {
     console.error(err);
     process.exit(1);
   });
+};
+
+export const round = (val: number, decimals: number): number => {
+  const pow = Math.pow(10, decimals);
+  return Math.round(val * pow) / pow;
 };

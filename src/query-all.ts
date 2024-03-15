@@ -4,12 +4,14 @@
  */
 
 import { Quadstore } from 'quadstore';
-import { main, runTest, time, waitForEvent } from './utils.js';
+import { main, runTest, waitForEvent, round } from './utils.js';
 import { DataFactory } from 'rdf-data-factory';
 import { Engine } from 'quadstore-comunica';
+import { Bindings } from '@rdfjs/types';
+import assert from 'node:assert';
 
 const dataFactory = new DataFactory();
-const qty = 200000;
+const qty = 200_000;
 
 const doWrites = async (store: Quadstore) => {
   for (let i = 0; i < qty; i += 1) {
@@ -22,38 +24,43 @@ const doWrites = async (store: Quadstore) => {
   }
 };
 
-const doReads = async (store: Quadstore) => {
-  const engine = new Engine(store);
-  let count = 0;
-  const iterator = await engine.queryBindings(`SELECT * WHERE { ?s ?p ?o . }`);
-  iterator.on('data', (binding) => {
-    count++;
-  });
-  iterator.on('error', (err) => {
-    console.error(err);
-  });
-  await waitForEvent(iterator, 'end');
-  return count;
-};
-
 main(async () => {
 
-  runTest(async (backend, checkDiskUsage) => {
+  const results = await runTest(async (backend, du, time, timeEnd, info) => {
+    time('setup');
     const store = new Quadstore({
       backend,
       dataFactory,
     });
+    const engine = new Engine(store);
     await store.open();
+    timeEnd('setup');
+    time('writes');
     await doWrites(store);
-    console.log('written to disk');
-    const { time: readTime, value: readQty } = await time(() => doReads(store));
-    const diskUsage = await checkDiskUsage();
-    console.log('total time', readTime);
-    console.log('total data', readQty);
-    console.log('quad/s', readQty / readTime * 1000);
-    console.log('disk usage', diskUsage);
-    await store.close();
+    timeEnd('writes');
+    let count = 0;
+    time('query - setup');
+    const iterator = await engine.queryBindings(`SELECT * WHERE { ?s ?p ?o . }`);
+    const onDataRest = (bindings: Bindings) => {
+      count++;
+    };
+    const onDataFirst = (bindings: Bindings) => {
+      onDataRest(bindings);
+      timeEnd('query - setup');
+      time('query - reads');
+      iterator.on('data', onDataRest);
+    };
+    iterator.once('data', onDataFirst);
+    iterator.on('error', (err) => {
+      console.error(err);
+    });
+    await waitForEvent(iterator, 'end');
+    const query_read_duration = timeEnd('query - reads');
+    info('quads_per_second', round((qty / query_read_duration) * 1000, 2));
+    assert(count === qty, 'mismatched count');
   });
+
+  console.log(JSON.stringify(results, null, 2));
 
 });
 

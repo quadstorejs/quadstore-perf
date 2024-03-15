@@ -4,7 +4,7 @@
  */
 
 import { Quadstore } from 'quadstore';
-import { main, runTest, time, waitForEvent } from './utils.js';
+import { main, runTest, waitForEvent, round } from './utils.js';
 import { DataFactory } from 'rdf-data-factory';
 import assert from 'assert';
 import * as xsd from './xsd.js';
@@ -23,43 +23,44 @@ const doWrites = async (store: Quadstore) => {
   }
 };
 
-const doReads = async (store: Quadstore) => {
-  let count = 0;
-  // With the default set of indexes, the following (pattern,order) combination
-  // leads to sorting in-memory.
-  const results = await store.getStream(
-    { graph: dataFactory.namedNode(`ex://g`) },
-    { order: ['object'] },
-  );
-  assert(results.resorted, 'not resorted');
-  results.iterator.on('data', (q) => {
-    count++;
-  });
-  results.iterator.on('error', (err) => {
-    console.error(err);
-  });
-  await waitForEvent(results.iterator, 'end');
-  return count;
-};
-
 main(async () => {
 
-  runTest(async (backend, checkDiskUsage) => {
+  const results = await runTest(async (backend, du, time, timeEnd, info) => {
     const store = new Quadstore({
       backend,
       dataFactory,
     });
     await store.open();
+    time('write');
     await doWrites(store);
-    console.log('written to disk');
-    const { time: readTime, value: readQty } = await time(() => doReads(store));
-    const diskUsage = await checkDiskUsage();
-    console.log('total time', readTime);
-    console.log('total data', readQty);
-    console.log('quad/s', readQty / readTime * 1000);
-    console.log('disk usage', diskUsage);
+    timeEnd('write');
+
+    let count = 0;
+    time('sorting');
+    // With the default set of indexes, the following (pattern,order) combination
+    // leads to sorting in-memory.
+    const results = await store.getStream(
+      { graph: dataFactory.namedNode(`ex://g`) },
+      { order: ['object'] },
+    );
+    assert(results.resorted, 'not resorted');
+    results.iterator.on('data', (q) => {
+      count++;
+    });
+    results.iterator.on('error', (err) => {
+      console.error(err);
+    });
+    await waitForEvent(results.iterator, 'end');
+    const duration = timeEnd('sorting');
+
+    info('quads_per_second', round((count / duration) * 1000, 2));
+    
+    assert(qty === count, 'count mismatch');
+
     await store.close();
   });
+
+  console.log(JSON.stringify(results, null, 2));
 
 });
 
