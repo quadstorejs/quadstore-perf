@@ -1,6 +1,6 @@
 
 import { strictEqual } from  'assert';
-import oxigraph from  'oxigraph';
+import oxigraph, { Quad as OxiQuad } from  'oxigraph';
 import { Engine } from  'quadstore-comunica';
 import { Quadstore } from  'quadstore';
 import { DataFactory } from  'rdf-data-factory';
@@ -48,10 +48,10 @@ main(async () => {
     
 
     time('oxigraph - SQL read');    
-    let oxigraph_sql_count = 0;
-    for (const binding of oxistore.query('SELECT * WHERE { ?s ?p ?o }', {})) {
-      oxigraph_sql_count += 1;
-    }
+    let oxigraph_sql_count = (oxistore.query('SELECT * WHERE { ?s ?p ?o }', {}) as OxiQuad[]).length;
+    // for (const binding of oxistore.query('SELECT * WHERE { ?s ?p ?o }', {})) {
+    //   oxigraph_sql_count += 1;
+    // }
     strictEqual(oxigraph_sql_count, QTY, 'bad count');
     timeEnd('oxigraph - SQL read');    
 
