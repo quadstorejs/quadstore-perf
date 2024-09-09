@@ -12,17 +12,17 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@nxtedition/rocksdb": "^10.3.8",
-    "@types/n3": "^1.16.5",
+    "@nxtedition/rocksdb": "^11.0.5",
+    "@types/n3": "^1.21.0",
     "abstract-level": "^1.0.3",
     "classic-level": "^1.4.1",
     "memory-level": "^1.0.0",
-    "n3": "^1.21.0",
+    "n3": "^1.21.1",
     "oxigraph": "^0.4.0-rc.1",
-    "quadstore": "^13.1.4",
+    "quadstore": "^13.2.0",
     "quadstore-comunica": "^4.4.2",
     "rdf-data-factory": "^1.1.2",
-    "typescript": "^5.5.4",
+    "typescript": "^5.6.2",
     "uid": "^2.0.2"
   }
 }
