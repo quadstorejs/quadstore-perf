@@ -1,12 +1,13 @@
 
 # quadstore-perf 
 
-The performance profile of `quadstore` is strongly influenced by its design
-choices in terms of atomicity. As all update operations are implemented
+The performance profile of [`quadstore`][perf-0] is strongly influenced by its
+design choices in terms of atomicity. As all update operations are implemented
 through [AbstractLevel#batch][perf-1] operations that atomically update
 all indexes, they are performed in a manner that closely approximates batch
 random updates.
 
+[perf-0]: https://github.com/quadstorejs/quadstore
 [perf-1]: https://github.com/Level/abstract-level
 [perf-2]: https://github.com/Level/bench
 
