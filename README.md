@@ -17,7 +17,7 @@ running Node v18.7.0.
 ### Reading quads
 
 Sequential reads iterating through quads in any given index run at about
-**~1M quads per second**.
+**~1.1M quads per second**.
 
 ```
 node dist/read.js
@@ -40,12 +40,12 @@ node dist/loadfile.js /path/to/21million.rdf
 ```
 
 With the default six indexes and the `classic-level` backend, import performance
-clocks at **~35k quads per second** when importing quads one-by-one, with a
-density of **~6.5k quads per MB**. Due to the six indexes, this translates to
-~210k batched update operations per second, ~0.21 times the reference target.
+clocks at **~44k quads per second** when importing quads one-by-one, with a
+density of **~6.7k quads per MB**. Due to the six indexes, this translates to
+~264k batched update operations per second, ~0.25 times the reference target.
 
-Setting the `batchSize` parameter to `100` leads to quads being imported in
-groups of 100, which boosts performance up to **~50k quads per second**, roughly
-~0.5 times the reference target when accounting for the six indexes.
+Setting the `batchSize` parameter to `128` leads to quads being imported in
+groups of 128, which boosts performance up to **~65k quads per second**, roughly
+~0.45 times the reference target when accounting for the six indexes.
 
 [21mil-rdf]: https://github.com/dgraph-io/benchmarks/blob/master/data/21million.rdf.gz

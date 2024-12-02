@@ -40,44 +40,22 @@ const du = async (absPath: string, label: string, disk_results: TestResults['dis
   });
 }
 
-const runTestUsingDiskStorage = async <T>(backendType: DiskBackendType, fn: TestFn, time: TimeFn, timeEnd: TimeEndFn, info: InfoFn, disk_results: TestResults['disk']): Promise<void> => {
+const runTestUsingDiskStorage = async (fn: TestFn, time: TimeFn, timeEnd: TimeEndFn, info: InfoFn, disk_results: TestResults['disk']): Promise<void> => {
   const os = await import('os');
   const path = await import('path');
   const fs = await import('fs/promises');
-  let Level: new (location: string, opts?: any) => AbstractLevel<any, any, any>;
-  switch (backendType) {
-    case 'classic':
-      Level = (await import('classic-level')).ClassicLevel;
-      break;
-    case 'rocksdb-nxtedition':
-      // @ts-ignore
-      Level = (await import('@nxtedition/rocksdb')).RocksLevel;
-      break;
-    default:
-      throw new Error('unsupported');
-  }
   const dir = path.join(os.tmpdir(), `node-quadstore-${uid()}`);
+  const backend = new (await import('classic-level')).ClassicLevel(dir);  
   const checkDiskUsage: DiskUsageFn = (label: string) => du(dir, label, disk_results);
-  const backend = new Level(dir);
   await fn(backend, (checkDiskUsage), time, timeEnd, info);
   await fs.rm(dir, { recursive: true });
 };
 
-const runTestInMemory = async (backendType: MemoryBackendType, fn: TestFn, time: TimeFn, timeEnd: TimeEndFn, info: InfoFn): Promise<void> => {
+const runTestInMemory = async (fn: TestFn, time: TimeFn, timeEnd: TimeEndFn, info: InfoFn): Promise<void> => {
   const checkDiskUsage: DiskUsageFn = (label: string) => Promise.resolve();
-  let Level: new (opts?: any) => AbstractLevel<any, any, any>;
-  switch (backendType) {
-    case 'memory':
-      Level = (await import('memory-level')).MemoryLevel;
-      break;
-    default:
-      throw new Error('unsupported');
-  }
-  const backend = new Level();
+  const backend = new (await import('memory-level')).MemoryLevel();
   return await fn(backend, checkDiskUsage, time, timeEnd, info);
 };
-
-
 
 export const runTest = async (fn: TestFn): Promise<TestResults> => {
   let test_started_at = Date.now();
@@ -101,11 +79,10 @@ export const runTest = async (fn: TestFn): Promise<TestResults> => {
   const backendType = process.env.BACKEND ?? 'classic';
   switch (backendType) {
     case 'classic':
-    case 'rocksdb-nxtedition':
-      await runTestUsingDiskStorage(backendType, fn, time, timeEnd, infoFn, disk);
+      await runTestUsingDiskStorage(fn, time, timeEnd, infoFn, disk);
       break;
     case 'memory':
-      await runTestInMemory(backendType, fn, time, timeEnd, infoFn);
+      await runTestInMemory(fn, time, timeEnd, infoFn);
       break;
     default:
       throw new Error('unsupported');

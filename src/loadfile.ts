@@ -42,7 +42,7 @@ main(async () => {
     // const { time: putTime } = await time(() => store.putStream(source));
     // const { time: putTime } = await time(() => store.putStream(source, { scope }));
     time('write');
-    await store.putStream(source, { batchSize: 100 });
+    await store.putStream(source, { /* batchSize: 128 */ });
     const duration = timeEnd('write');
 
     info('quads_per_second', round((quads.length / duration) * 1000, 2));
