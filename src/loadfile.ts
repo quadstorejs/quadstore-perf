@@ -4,7 +4,8 @@ import fs from 'fs';
 import path from 'path';
 import { Quadstore } from 'quadstore';
 import { ArrayIterator } from 'asynciterator';
-import { DataFactory, StreamParser } from 'n3';
+import { StreamParser } from 'n3';
+import { DataFactory } from 'rdf-data-factory';
 import { runTest, streamToArray } from './utils.js';
 import { main, round } from './utils.js';
 
@@ -24,7 +25,7 @@ main(async () => {
 
     const store = new Quadstore({
       backend,
-      dataFactory: DataFactory,
+      dataFactory: new DataFactory(),
     });
 
     await store.open();
