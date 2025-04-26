@@ -19,7 +19,7 @@
     "n3": "^1.25.2",
     "oxigraph": "^0.4.9",
     "quadstore": "^15.1.0",
-    "quadstore-comunica": "^6.0.0",
+    "quadstore-comunica": "^6.0.1",
     "rdf-data-factory": "^2.0.2",
     "typescript": "^5.8.3",
     "uid": "^2.0.2"
