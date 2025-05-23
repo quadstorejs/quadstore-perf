@@ -12,12 +12,12 @@ random updates.
 [perf-2]: https://github.com/Level/bench
 
 The testing platform is a 2020 MacBook Pro (Apple Silicon M1 / arm64, 16 GB)
-running Node v18.7.0.
+running Node v20.19.0.
 
 ### Reading quads
 
 Sequential reads iterating through quads in any given index run at about
-**~1.1M quads per second**.
+**~1.7M quads per second**.
 
 ```
 node dist/read.js
