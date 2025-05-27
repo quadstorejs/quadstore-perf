@@ -6,16 +6,18 @@
 import { Quadstore } from 'quadstore';
 import { main, runTest, waitForEvent, round } from './utils.js';
 import { DataFactory } from 'rdf-data-factory';
-import { Engine } from 'quadstore-comunica';
-import { Bindings } from '@rdfjs/types';
+import { Engine as QuadstoreEngine } from 'quadstore-comunica';
+import { Bindings, Quad } from '@rdfjs/types';
+import { Store as N3Store } from 'n3';
+import { QueryEngine as ComunicaEngine } from '@comunica/query-sparql-rdfjs';
 import assert from 'node:assert';
 
 const dataFactory = new DataFactory();
 const qty = 200_000;
 
-const doWrites = async (store: Quadstore) => {
+const doWrites = async (storeFn: (quad: Quad) => any) => {
   for (let i = 0; i < qty; i += 1) {
-    await store.put(dataFactory.quad(
+    await storeFn(dataFactory.quad(
       dataFactory.namedNode(`ex://s${i}`),
       dataFactory.namedNode(`ex://p${i}`),
       dataFactory.namedNode(`ex://o${i}`),
@@ -26,20 +28,51 @@ const doWrites = async (store: Quadstore) => {
 
 main(async () => {
 
-  const results = await runTest(async (backend, du, time, timeEnd, info) => {
+  const quadstore_quadstorecomunica = await runTest(async (backend, du, time, timeEnd, info) => {
     time('setup');
-    const store = new Quadstore({
-      backend,
-      dataFactory,
-    });
-    const engine = new Engine(store);
-    await store.open();
+    const store = new Quadstore({ backend, dataFactory });
+    const engine = new QuadstoreEngine(store);
+     await store.open();
     timeEnd('setup');
     time('writes');
-    await doWrites(store);
+    await doWrites((quad) => store.put(quad));
     timeEnd('writes');
     let count = 0;
     time('query - setup');
+    // const iterator = await quadstore_engine.queryBindings(`SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s ?p ?o . } }`);
+    const iterator = await engine.queryBindings(`SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s ?p ?o . } }`);
+    const onDataRest = (bindings: Bindings) => {
+      count++;
+    };
+    const onDataFirst = (bindings: Bindings) => {
+      onDataRest(bindings);
+      timeEnd('query - setup');
+      time('query - reads');
+      iterator.on('data', onDataRest);
+    };
+    iterator.once('data', onDataFirst);
+    iterator.on('error', (err) => {
+      console.error(err);
+    });
+    await waitForEvent(iterator, 'end');
+    const query_read_duration = timeEnd('query - reads');
+    info('quads_per_second', round((qty / query_read_duration) * 1000, 2));
+    info('quads read', count);
+  });
+  
+  console.log('quadstore, quadstore-comunica: ', quadstore_quadstorecomunica['time']['partials']['query - reads']['time']);
+  
+  const n3store_quadstorecomunica = await runTest(async (backend, du, time, timeEnd, info) => {
+    time('setup');
+    const store = new N3Store();
+    const engine = new QuadstoreEngine(store as unknown as Quadstore);
+    timeEnd('setup');
+    time('writes');
+    await doWrites((quad) => store.addQuad(quad));
+    timeEnd('writes');
+    let count = 0;
+    time('query - setup');
+    // const iterator = await quadstore_engine.queryBindings(`SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s ?p ?o . } }`);
     const iterator = await engine.queryBindings(`SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s ?p ?o . } }`);
     const onDataRest = (bindings: Bindings) => {
       count++;
@@ -60,7 +93,80 @@ main(async () => {
     info('quads read', count);
   });
 
-  console.log(JSON.stringify(results, null, 2));
-
+  console.log('n3, quadstore-comunica: ', n3store_quadstorecomunica['time']['partials']['query - reads']['time']);
+  
+  const quadstore_comunica = await runTest(async (backend, du, time, timeEnd, info) => {
+    time('setup');
+    const store = new Quadstore({ backend, dataFactory });
+    const engine = new ComunicaEngine();
+    await store.open();
+    timeEnd('setup');
+    time('writes');
+    await doWrites((quad) => store.put(quad));
+    timeEnd('writes');
+    let count = 0;
+    time('query - setup');
+    // const iterator = await quadstore_engine.queryBindings(`SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s ?p ?o . } }`);
+    const iterator = await engine.queryBindings(`SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s ?p ?o . } }`, {
+      sources: [store],
+      destination: store,
+    });
+    const onDataRest = (bindings: Bindings) => {
+      count++;
+    };
+    const onDataFirst = (bindings: Bindings) => {
+      onDataRest(bindings);
+      timeEnd('query - setup');
+      time('query - reads');
+      iterator.on('data', onDataRest);
+    };
+    iterator.once('data', onDataFirst);
+    iterator.on('error', (err) => {
+      console.error(err);
+    });
+    await waitForEvent(iterator, 'end');
+    const query_read_duration = timeEnd('query - reads');
+    info('quads_per_second', round((qty / query_read_duration) * 1000, 2));
+    info('quads read', count);
+  });
+  
+  console.log('quadstore, comunica: ', quadstore_comunica['time']['partials']['query - reads']['time']);
+  
+  const n3store_comunica = await runTest(async (backend, du, time, timeEnd, info) => {
+    time('setup');
+    const store = new N3Store();
+    const engine = new ComunicaEngine();
+    timeEnd('setup');
+    time('writes');
+    await doWrites((quad) => store.addQuad(quad));
+    timeEnd('writes');
+    let count = 0;
+    time('query - setup');
+    // const iterator = await quadstore_engine.queryBindings(`SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s ?p ?o . } }`);
+    const iterator = await engine.queryBindings(`SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s ?p ?o . } }`, {
+      sources: [store],
+      destination: store,
+    });
+    const onDataRest = (bindings: Bindings) => {
+      count++;
+    };
+    const onDataFirst = (bindings: Bindings) => {
+      onDataRest(bindings);
+      timeEnd('query - setup');
+      time('query - reads');
+      iterator.on('data', onDataRest);
+    };
+    iterator.once('data', onDataFirst);
+    iterator.on('error', (err) => {
+      console.error(err);
+    });
+    await waitForEvent(iterator, 'end');
+    const query_read_duration = timeEnd('query - reads');
+    info('quads_per_second', round((qty / query_read_duration) * 1000, 2));
+    info('quads read', count);
+  });
+  
+  console.log('n3, comunica: ', n3store_comunica['time']['partials']['query - reads']['time']);
+  
 });
 
