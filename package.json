@@ -12,14 +12,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@types/n3": "^1.24.2",
+    "@types/n3": "^1.26.0",
     "abstract-level": "^3.1.0",
     "classic-level": "^3.0.0",
     "memory-level": "^3.1.0",
-    "n3": "^1.25.2",
+    "n3": "^1.26.0",
     "oxigraph": "^0.4.11",
-    "quadstore": "^15.2.0",
-    "quadstore-comunica": "^6.1.0",
+    "quadstore": "^15.3.0",
+    "quadstore-comunica": "^6.2.0",
     "rdf-data-factory": "^2.0.2",
     "typescript": "^5.8.3",
     "uid": "^2.0.2"
