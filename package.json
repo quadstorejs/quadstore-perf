@@ -18,8 +18,8 @@
     "memory-level": "^3.1.0",
     "n3": "^2.13.12",
     "oxigraph": "^0.5.13",
-    "quadstore": "^15.4.2",
-    "quadstore-comunica": "^6.3.1",
+    "quadstore": "^16.0.0",
+    "quadstore-comunica": "^7.0.0",
     "rdf-data-factory": "^2.1.0",
     "typescript": "^7.0.2",
     "uid": "^2.0.2"
